@@ -4,6 +4,16 @@ const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
 const { loginSchema, ZodError } = require("./lib/schemas/loginSchema");
 const { z } = require("zod");
+const rateLimit = require("express-rate-limit");
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many attempts, try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // JWT (MANUAL)
 const jwt = {
   sign: (payload, secret, expiresInMs) => {
@@ -53,6 +63,7 @@ const refreshTokenExpiry = new Map(); // token -> expiryTime
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use(authLimiter);
 
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
